@@ -14,6 +14,7 @@
  ;; If there is more than one, they won't work right.
  '(default ((t (:family "Consolas" :foundry "outline" :slant normal :weight normal :height 98 :width normal)))))
 
+
 (add-to-list 'load-path "~/.emacs.d/elpa/evil-1.0.0")
 (add-to-list 'load-path "~/.emacs.d/elpa/ack-0.8")
 (add-to-list 'load-path "~/.emacs.d/elpa/paredit-22")
@@ -42,6 +43,24 @@
 (defun open-dotemacs ()
   (interactive)
   (find-file "~/.emacs"))
+
+;ESC does the right thing (TM) (==> quits EVERYTHING!)
+(defun minibuffer-keyboard-quit ()
+  (interactive)
+  (if (and delete-selection-mode transient-mark-mode mark-active)
+      (setq deactivate-mark t)
+    (when (get-buffer "*Completions*") (delete-windows-on "*Completions*"))
+    (abort-recursive-edit)))
+
+(define-key evil-visual-state-map [escape] 'keyboard-quit)
+(define-key minibuffer-local-map [escape] 'minibuffer-keyboard-quit)
+(define-key minibuffer-local-ns-map [escape] 'minibuffer-keyboard-quit)
+(define-key minibuffer-local-completion-map [escape] 'minibuffer-keyboard-quit)
+(define-key minibuffer-local-must-match-map [escape] 'minibuffer-keyboard-quit)
+(define-key minibuffer-local-isearch-map [escape] 'minibuffer-keyboard-quit)
+
+(global-set-key [escape] 'evil-exit-emacs-state)
+
 
 (show-paren-mode t)
 
@@ -83,12 +102,17 @@
 (fset 'yes-or-no-p 'y-or-n-p) ;;change "yes or n" prompt to `y or n'
 (setq frame-title-format
       '("" (:eval (if (buffer-file-name)
-                      (replace-regexp-in-string "c:/Users/Utente" "~" (buffer-file-name)))
+                      (replace-regexp-in-string "c:/Users/Utente" "~" (buffer-file-name))
+                    (buffer-name))
                   "%b")
         " - emacs " emacs-version))
 
 (setq column-number-mode t) ;;yeah, line numbering sucks, at least, 
-(setq line-number-mode t) ;;show line, colum in the status bar
+(setq line-number-mode t) ;;show (line, column) in the status bar
+
+(setq ring-bell-function 'ignore)
+
+(setq sentence-end-double-space nil) ;;vim-like. It's not perfect, but neither the other option is, so let's keep the one which is more useful
 
 (defun dos2unix ()
   (interactive)
@@ -112,3 +136,8 @@
 (setq backup-directory-alist '(("." . "~/.saves")))
 
 (cd "C:\\Users\\Utente")
+
+;;; miscellaneous org-mode settings
+(setq org-log-done 'time)
+;;org-mode binding with evil
+(evil-ex-define-cmd "html" 'org-export-as-html-and-open)
