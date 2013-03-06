@@ -3,9 +3,18 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(custom-enabled-themes (quote (wombat)))
+ '(custom-safe-themes
+   (quote
+    ("c56fd34f8f404e6e9e6f226c6ce2d170595acc001741644d22b49e457e3cd497"
+     "998e84b018da1d7f887f39d71ff7222d68f08d694fe0a6978652fb5a447bdcd2"
+     "1760322f987b57884e38f4076ac586c27566a1d7ed421b67843c8c98a1501e3a"
+     "72cc9ae08503b8e977801c6d6ec17043b55313cda34bcf0e6921f2f04cf2da56"
+     "501caa208affa1145ccbb4b74b6cd66c3091e41c5bb66c677feda9def5eab19c"
+     "d2622a2a2966905a5237b54f35996ca6fda2f79a9253d44793cfe31079e3c92b"
+     default)))
  '(evil-want-C-w-in-emacs-state t)
  '(font-lock-maximum-decoration (quote ((erlang-mode . 3)))))
+
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -14,15 +23,15 @@
  ;; If there is more than one, they won't work right.
  '(default ((t (:family "Consolas" :foundry "outline" :slant normal :weight normal :height 98 :width normal)))))
 
+(require 'package)
+(add-to-list 'package-archives
+             '("marmalade" . "http://marmalade-repo.org/packages/"))
+(add-to-list 'package-archives
+             '("melpa" . "http://melpa.milkbox.net/packages/"))
+(package-initialize)
 
-(add-to-list 'load-path "~/.emacs.d/elpa/evil-1.0.0")
-(add-to-list 'load-path "~/.emacs.d/elpa/ack-0.8")
-(add-to-list 'load-path "~/.emacs.d/elpa/paredit-22")
-(add-to-list 'load-path "~/.emacs.d/elpa/undo-tree-0.6.3")
-(add-to-list 'load-path "~/.emacs.d/elpa/evil-1.0.0")
-(add-to-list 'load-path "~/.emacs.d/elpa/evil-leader-0.1")
-(add-to-list 'load-path "~/.emacs.d/elpa/evil-paredit-0.0.1")
-(add-to-list 'load-path "~/.emacd.d/elpa/markdown-mode-1.9")
+(let ((default-directory "~/.emacs.d/"))
+  (normal-top-level-add-subdirs-to-load-path))
 
 (add-to-list 'load-path "C:/Program Files/erl5.9.3.1/lib/tools-2.6.8/emacs")
 (setq erlang-root-dir "C:/Program Files/erl5.9.3.1")
@@ -32,19 +41,26 @@
 
 (require 'evil)
 (evil-mode 1)
+
 (require 'ack)
 
-;;some leader mapping. A vimmer dream's.
+(require 'undo-tree)
+(global-undo-tree-mode)
+
+(load-theme 'wombat)
+
 (require 'evil-leader)
 (evil-leader/set-leader ",")
 (evil-leader/set-key
-  "e" 'open-dotemacs)
+  "e" 'open-dotemacs
+  "1" 'rotate-theme
+  )
 
 (defun open-dotemacs ()
   (interactive)
   (find-file "~/.emacs"))
 
-;ESC does the right thing (TM) (==> quits EVERYTHING!)
+;;ESC does the right thing (TM) (quits everything)
 (defun minibuffer-keyboard-quit ()
   (interactive)
   (if (and delete-selection-mode transient-mark-mode mark-active)
@@ -54,33 +70,36 @@
 
 (define-key evil-visual-state-map [escape] 'keyboard-quit)
 (define-key minibuffer-local-map [escape] 'minibuffer-keyboard-quit)
-(define-key minibuffer-local-ns-map [escape] 'minibuffer-keyboard-quit)
-(define-key minibuffer-local-completion-map [escape] 'minibuffer-keyboard-quit)
-(define-key minibuffer-local-must-match-map [escape] 'minibuffer-keyboard-quit)
-(define-key minibuffer-local-isearch-map [escape] 'minibuffer-keyboard-quit)
+(define-key minibuffer-local-ns-map [escape]
+  'minibuffer-keyboard-quit) 
+(define-key minibuffer-local-completion-map [escape]
+  'minibuffer-keyboard-quit)
+(define-key minibuffer-local-must-match-map [escape]
+  'minibuffer-keyboard-quit)
+(define-key minibuffer-local-isearch-map [escape]
+  'minibuffer-keyboard-quit)
 
 (global-set-key [escape] 'evil-exit-emacs-state)
 
+(defun smart-tab (arg)
+  "That was difficult. Mimick `clever_tab` from VIM. It's
+minibuffer compliant: it acts as usual in the minibuffer (both
+opened with M-x and with :, for evil).
+Otherwise, if the current line is empty, it tries to indent it,
+according to the mode. If there's some text, it tries the
+completion, with the function completion-at-point (for programming)"
+  (interactive "P")
+  (if (minibufferp)
+      (if (string-match "^:" (minibuffer-prompt))
+          (evil-ex-run-completion-at-point)
+        (minibuffer-complete))
+    (let ((current-line (buffer-substring (line-beginning-position) (point))))
+      (if (string-match "^[:space:]*$" current-line)
+          (indent-according-to-mode)
+        (completion-at-point)))))
 
-(show-paren-mode t)
+(global-set-key [tab] 'smart-tab)
 
-;;paredit mode doesn't interact well with evil (for example C-v -- block select
-;;-- doesn't work anymore), and moreover, in lisp interaction mode,
-;; C-j doesn't 'eval-print-last-sexp, I've defined a simple keybinding to
-;;avoid that, but it's a kludge, and evil-paredit is still young.
-                                        ;(require 'evil-paredit)
-                                        ;(require 'paredit)
-                                        ;(autoload 'paredit-mode "paredit"
-                                        ;  "minor mode for pseudo-structurally editing Lisp code." t)
-                                        ;(add-hook 'emacs-lisp-mode-hook 'paredit-mode)
-                                        ;(add-hook 'emacs-lisp-mode-hook 'evil-paredit-mode)
-                                        ;(add-hook 'lisp-interaction-mode-hook 'paredit-mode)
-                                        ;(add-hook 'lisp-interaction-mode-hook 'evil-paredit-mode)
-                                        ;(eval-after-load "paredit"
-                                        ;  #'(define-key paredit-mode-map (kbd "C-j") 'eval-print-last-sexp))
-
-(require 'undo-tree)
-(global-undo-tree-mode)
 
 (defun autocompile nil
   "compile itself, if ~/.emacs"
@@ -112,7 +131,25 @@
 
 (setq ring-bell-function 'ignore)
 
-(setq sentence-end-double-space nil) ;;vim-like. It's not perfect, but neither the other option is, so let's keep the one which is more useful
+(show-paren-mode t) ;; hightlight matching parenthesis
+
+(defconst *custom-themes* '(wombat
+                            occidental
+                            solarized-light
+                            solarized-dark))
+
+(defvar *index* 0)
+
+(defun rotate-theme ()
+  (interactive)
+  (setq *index* (% (+ 1 *index*)
+                   (length *custom-themes*)))
+  (let ((next-theme (nth *index* *custom-themes*)))
+    (print next-theme)
+    (load-theme next-theme t)))
+
+;;vim-like. It's not perfect, but neither the other option is, so let's keep the one which is more useful
+(setq sentence-end-double-space nil) 
 
 (defun dos2unix ()
   (interactive)
@@ -141,3 +178,5 @@
 (setq org-log-done 'time)
 ;;org-mode binding with evil
 (evil-ex-define-cmd "html" 'org-export-as-html-and-open)
+
+(setq org-src-fontify-natively t)
