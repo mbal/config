@@ -3,7 +3,7 @@
 set nocompatible
 
 filetype off
-call pathogen#infect()
+call pathogen#infect("C:\\Users\\Utente\\bundle")
 call pathogen#helptags()
 call pathogen#runtime_append_all_bundles()
 
@@ -13,6 +13,7 @@ filetype indent on
 syntax on
 
 " === General VIM options ===
+set shortmess+=atI "no message on startup
 set history=500		" keep 500 lines of command line history
 set showmode "always show what mode we're currently editing in.
 "Allow backspacing over everything in insert mode
@@ -21,13 +22,13 @@ set ruler		" show the cursor position all the time
 set number		" show line number
 set showcmd		" display incomplete commands
 set wildmenu
-set wildignore=*.o,*.pyc,*.dll,*.class "Ignore compiled files
+set wildignore=*.exe,*.o,*.pyc,*.dll,*.class "Ignore compiled files
 set cmdheight=1		"Height of the command bar
 set showmatch		"Show matching brackets when text indicator is on
 set mat=5		"How many 1/10 of seconds blink when matching brackets
 set so=5 " Keep 5 lines from bottom/top
 set laststatus=2
-set synmaxcol=1000 " don't highlight lines longer than 1000 character
+set synmaxcol=500 " don't highlight lines longer than 1000 character
 set noswapfile
 set autoread "autoreload file when changed
 set iskeyword+=_ " _ is not a word divider
@@ -35,6 +36,8 @@ set lazyredraw " Do not redraw when executing macros
 set fo=tcrqn
 set nobackup
 set autochdir "switch directory to the current file's
+set hidden "bdelete hids a buffer
+set listchars=tab:>-,trail:·,eol:$
 
 " === Text, tab and indent ===
 set expandtab "Use spaces instead of tabs
@@ -52,10 +55,13 @@ set ignorecase
 set smartcase "only match case when an upper case letter is in the regex
 
 " === UI, font, cursor highlighting ===
+"" Bigger window than default
+set lines=35 
+set columns=84 "" 80 chars + line numbers
 
 set mouse=a "enable mouse (I use gVim)
-
-colorscheme xoria256 "desert, molokai
+set guioptions-=T
+colorscheme xoria256 "wombat256 
 
 if has("gui_running")
     if has("gui_gtk2")
@@ -74,7 +80,6 @@ set visualbell
 set t_vb=
 
 " === Autocommands on filetype
-
 "<F5> to execute current python source (both command and insert mode)
 autocmd filetype python noremap <buffer> <F5> :w<CR>:!python %<CR>
 autocmd filetype python inoremap <buffer> <F5> <Esc> :w<CR>:!python %<CR>
@@ -85,18 +90,39 @@ autocmd FileType * setlocal colorcolumn=0
 autocmd FileType ruby,python,javascript,c,cpp,objc setlocal colorcolumn=79
 autocmd FileType text setlocal textwidth=80
 
-au syntax * cal rainbow_parentheses#activate()
+augroup EclimJavaCommands
+    autocmd!
+    autocmd FileType java nnoremap <buffer> <leader>i :JavaImport<CR>
+    autocmd FileType java nnoremap <buffer> <leader>d :JavaDocSearch -x declarations<CR>
+    autocmd FileType java nnoremap <cr> :JavaSearchContext<CR>
+augroup END
+
+" Autocompletion
+set completeopt=menuone,longest,preview
+let g:SuperTabDefaultCompletionType = 'context'
 
 " === Key mappings ===
-
 let mapleader = ","
 let g:mapleader = ","
-nnoremap <leader>e :e $MYVIMRC<CR>
-nnoremap <leader>s :so $MYVIMRC<CR>
+nnoremap <leader>ev :edit $MYVIMRC<CR>
+nnoremap <leader>sv :source $MYVIMRC<CR>
 nnoremap <leader>nl :nohl<CR>
-" I don't have the backquote on this keyboard, so I swap quote and backquote.
+nnoremap <leader>1 :call RotateTheme()<CR>
+nnoremap <silent> <leader>ls :set nolist!<CR>
+
+"" swap ` with ' and viceversa
 nnoremap ' `
 nnoremap ` '
+
+nnoremap <leader>rn :call NumberToggle()<CR>
+nnoremap <F2> :call NumberToggle()<CR>
+
+let s:index = 0
+function! RotateTheme()
+    let custom_colors = ["Tomorrow-night", "wombat256", "solarized", "xoria256"]
+    let s:index = (s:index + 1) % len(custom_colors)
+    execute 'colorscheme '.custom_colors[s:index]
+endfunction
 
 function! NumberToggle()
     if &relativenumber==1
@@ -106,24 +132,6 @@ function! NumberToggle()
     endif
 endfunction
 
-nnoremap <leader>rn :call NumberToggle()<CR>
-nnoremap <F2> :call NumberToggle()<CR>
-
-function! CleverTab()
-    if strpart(getline('.'), 0, col('.')-1) =~ '^\s*$'
-        return "\<Tab>"
-    else
-        if &omnifunc != ''
-            return "\<C-X>\<C-O>"
-        elseif &dictionary != ''
-            return "\<C-K>"
-        else
-            return "\<C-N>"
-        endif
-    endif
-endfunction
-
-inoremap <Tab> <C-R>=CleverTab()<CR>
 
 " Don't use Ex mode, use Q for formatting
 map Q gq
@@ -132,9 +140,9 @@ map Q gq
 " so that you can undo CTRL-U after inserting a line break.
 inoremap <C-U> <C-G>u<C-U>
 
+onoremap in( :<c-u>normal! f(vi(<cr>
 
 if has("autocmd")
-
   " Enable file type detection.
   " Use the default filetype settings, so that mail gets 'tw' set to 72,
   " 'cindent' is on in C files, etc.
@@ -143,8 +151,6 @@ if has("autocmd")
   " Put these in an autocmd group, so that we can delete them easily.
   augroup vimrcEx
   au!
-
-  " For all text files set 'textwidth' to 80 characters.
 
   " When editing a file, always jump to the last known cursor position.
   " Don't do it when the position is invalid or when inside an event handler
@@ -166,3 +172,12 @@ if !exists(":DiffOrig")
   command DiffOrig vert new | set bt=nofile | r # | 0d_ | diffthis
 		  \ | wincmd p | diffthis
 endif
+
+map <up> <nop>
+map <down> <nop>
+map <left> <nop>
+map <right> <nop>
+imap <up> <nop>
+imap <down> <nop>
+imap <left> <nop>
+imap <right> <nop>
